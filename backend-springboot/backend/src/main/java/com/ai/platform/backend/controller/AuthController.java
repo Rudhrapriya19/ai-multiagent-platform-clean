@@ -2,7 +2,7 @@ package com.ai.platform.backend.controller;
 
 import com.ai.platform.backend.dto.LoginRequest;
 import com.ai.platform.backend.entity.User;
-import com.ai.platform.backend.jwt.JwtUtil;
+import com.ai.platform.backend.security.JwtUtil;
 import com.ai.platform.backend.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +12,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+
+
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin("*")
+@CrossOrigin(
+        origins = "http://localhost:5173",
+        allowCredentials = "true"
+)
+
 public class AuthController {
 
     @Autowired
@@ -49,21 +55,41 @@ public class AuthController {
             @RequestBody LoginRequest request
     ) {
 
+        System.out.println("===== LOGIN REQUEST RECEIVED =====");
+        System.out.println("EMAIL = " + request.getEmail());
+
         User user = userRepository
                 .findByEmail(request.getEmail())
-                .orElseThrow();
+                .orElse(null);
 
-        if (!passwordEncoder.matches(
+        System.out.println("LOGIN EMAIL = " + request.getEmail());
+
+        if (user == null) {
+
+            System.out.println("USER NOT FOUND");
+
+            throw new RuntimeException("User not found");
+        }
+
+        System.out.println("USER FOUND = " + user.getEmail());
+
+        System.out.println("DB PASSWORD = " + user.getPassword());
+
+        boolean matches = passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword()
-        )) {
+        );
+
+        System.out.println("PASSWORD MATCH = " + matches);
+
+        if (!matches) {
 
             throw new RuntimeException("Invalid Password");
         }
 
         String token = jwtUtil.generateToken(
-                user.getEmail(),
-                user.getRole()
+                user.getEmail()
+
         );
 
         Map<String, String> response = new HashMap<>();

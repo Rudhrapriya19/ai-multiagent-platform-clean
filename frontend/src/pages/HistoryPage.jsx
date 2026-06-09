@@ -17,8 +17,11 @@ function HistoryPage() {
 
         try {
 
+            const email =
+                localStorage.getItem("email")
+
             const res = await axios.get(
-                "http://localhost:8080/ai/history"
+                `http://localhost:8080/ai/history/${email}`
             )
 
             setHistory(res.data)

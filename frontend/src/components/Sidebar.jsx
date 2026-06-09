@@ -1,9 +1,21 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 function Sidebar() {
 
     const [open, setOpen] = useState(false)
+
+    const navigate = useNavigate()
+
+    const handleLogout = () => {
+
+        localStorage.removeItem("token")
+        localStorage.removeItem("email")
+
+        alert("Logged Out Successfully 🚪")
+
+        navigate("/login")
+    }
 
     return (
 
@@ -34,6 +46,8 @@ function Sidebar() {
                     transition-transform
                     duration-300
                     z-40
+                    flex
+                    flex-col
 
                     ${open ? "translate-x-0" : "-translate-x-full"}
 
@@ -69,6 +83,30 @@ function Sidebar() {
                     <Link to="/history">
                         AI History
                     </Link>
+
+                </div>
+
+                {/* LOGOUT BUTTON */}
+
+                <div className="mt-auto">
+
+                    <button
+                        onClick={handleLogout}
+                        className="
+                            w-full
+                            bg-red-500
+                            hover:bg-red-600
+                            transition
+                            p-3
+                            rounded-xl
+                            font-bold
+                            mt-8
+                        "
+                    >
+
+                        Logout 🚪
+
+                    </button>
 
                 </div>
 

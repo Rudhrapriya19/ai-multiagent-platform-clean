@@ -26,9 +26,13 @@ function LoginPage() {
             )
 
             localStorage.setItem(
-
                 "token",
-                res.data
+                res.data.token
+            )
+
+            localStorage.setItem(
+                "email",
+                email
             )
 
             alert("Login Successful 🚀")

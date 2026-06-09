@@ -23,8 +23,11 @@ function ChatPage() {
 
         try {
 
+            const email =
+                localStorage.getItem("email")
+
             const res = await axios.post(
-                `http://localhost:8080/ai/chat?message=${message}`
+                `http://localhost:8080/ai/chat?message=${message}&email=${email}`
             )
 
             const aiMessage = {
@@ -37,6 +40,13 @@ function ChatPage() {
         } catch (error) {
 
             console.log(error)
+
+            const errorMessage = {
+                role: "ai",
+                text: "Error getting AI response"
+            }
+
+            setMessages((prev) => [...prev, errorMessage])
         }
 
         setMessage("")
@@ -90,102 +100,104 @@ function ChatPage() {
                             >
 
                                 {
-                                    msg.role === "user"
+                                    msg.role === "user" ? (
 
-                                        ? (
+                                        <p className="text-sm md:text-lg leading-7 md:leading-8 break-words">
+                                            {msg.text}
+                                        </p>
 
-                                            <p className="text-sm md:text-lg leading-7 md:leading-8 break-words">
+                                    ) : (
 
-                                                {msg.text}
+                                        <div className="space-y-3">
 
-                                            </p>
-                                        )
+                                            {
+                                                msg.text
+                                                    .split("\n")
+                                                    .map((line, i) => {
 
-                                        : (
+                                                        const cleanText = line
+                                                            .replace(/\*\*/g, "")
+                                                            .trim()
 
-                                            <div className="space-y-4 md:space-y-6">
+                                                        if (!cleanText) {
+                                                            return <div key={i} className="h-2"></div>
+                                                        }
 
-                                                {
-                                                    msg.text
-                                                        .split("\n")
-                                                        .map((line, i) => {
+                                                        // RED MAIN TOPIC
 
-                                                            const cleanText =
-                                                                line
-                                                                    .replace(/\*\*/g, "")
-                                                                    .trim()
-
-                                                            // MAIN HEADING
-
-                                                            if (
-                                                                /^\d+\./.test(cleanText)
-                                                            ) {
-
-                                                                return (
-
-                                                                    <h1
-                                                                        key={i}
-                                                                        className="text-xl md:text-3xl font-bold text-cyan-400 mt-6 break-words"
-                                                                    >
-
-                                                                        {cleanText}
-
-                                                                    </h1>
-                                                                )
-                                                            }
-
-                                                            // SUBTOPIC
-
-                                                            if (
-                                                                cleanText.endsWith(":")
-                                                            ) {
-
-                                                                return (
-
-                                                                    <div
-                                                                        key={i}
-                                                                        className="flex gap-3 mt-4"
-                                                                    >
-
-                                                                        <span className="text-cyan-400 text-lg md:text-xl">
-
-                                                                            •
-
-                                                                        </span>
-
-                                                                        <h2 className="text-base md:text-xl font-bold text-red-400 break-words">
-
-                                                                            {cleanText}
-
-                                                                        </h2>
-
-                                                                    </div>
-                                                                )
-                                                            }
-
-                                                            // NORMAL CONTENT
+                                                        if (/^\d+\./.test(cleanText)) {
 
                                                             return (
-
-                                                                <p
+                                                                <h1
                                                                     key={i}
-                                                                    className="text-sm md:text-lg text-slate-300 leading-7 md:leading-10 md:ml-10 break-words"
+                                                                    className="
+                                        text-1g
+                                        md:text-xl
+                                        font-semibold
+                                        text-red-400
+                                        mt-3
+                                        mb-2
+                                        leading-8
+                                    "
                                                                 >
-
                                                                     {cleanText}
-
-                                                                </p>
+                                                                </h1>
                                                             )
-                                                        })
-                                                }
+                                                        }
 
-                                            </div>
-                                        )
+                                                        // BLUE SUB TOPIC
+
+                                                        if (cleanText.endsWith(":")) {
+
+                                                            return (
+                                                                <h2
+                                                                    key={i}
+                                                                    className="
+                                        text-lg
+                                        md:text-xl
+                                        font-semibold
+                                        text-cyan-400
+                                        ml-4
+                                        mb-2
+                                    "
+                                                                >
+                                                                    • {cleanText}
+                                                                </h2>
+                                                            )
+                                                        }
+
+                                                        // WHITE CONTENT
+
+                                                        return (
+                                                            <p
+                                                                key={i}
+                                                                className="
+                                    text-white
+                                    text-base
+                                    md:text-lg
+                                    leading-8
+                                    ml-6
+                                    mb-2
+                                "
+                                                            >
+                                                                {cleanText}
+                                                            </p>
+                                                        )
+                                                    })
+                                            }
+
+                                        </div>
+
+                                    )
+
                                 }
 
                             </div>
+
                         ))
                     }
+
+                    {/* LOADING */}
 
                     {/* LOADING */}
 
@@ -206,6 +218,7 @@ function ChatPage() {
 
                 </div>
 
+
                 {/* INPUT AREA */}
 
                 <div className="p-4 md:p-6 border-t border-slate-800 bg-[#0f172a] flex flex-col md:flex-row gap-4">
@@ -213,14 +226,35 @@ function ChatPage() {
                     <input
                         type="text"
                         placeholder="Ask anything..."
-                        className="flex-1 bg-[#1e293b] border border-slate-700 rounded-2xl p-4 outline-none text-white w-full"
+                        className="
+                            flex-1
+                            bg-[#1e293b]
+                            border
+                            border-slate-700
+                            rounded-2xl
+                            p-4
+                            outline-none
+                            text-white
+                            w-full
+                        "
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                     />
 
                     <button
                         onClick={sendMessage}
-                        className="bg-cyan-500 hover:bg-cyan-600 px-6 md:px-8 py-4 rounded-2xl font-bold transition w-full md:w-auto"
+                        className="
+                            bg-cyan-500
+                            hover:bg-cyan-600
+                            px-6
+                            md:px-8
+                            py-4
+                            rounded-2xl
+                            font-bold
+                            transition
+                            w-full
+                            md:w-auto
+                        "
                     >
 
                         Send

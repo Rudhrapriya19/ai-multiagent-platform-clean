@@ -1,16 +1,9 @@
 package com.ai.platform.backend.service;
 
-import com.ai.platform.backend.model.AIHistory;
-import com.ai.platform.backend.repository.AIHistoryRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,137 +12,48 @@ import java.util.Map;
 public class AIService {
 
     @Value("${groq.api.key}")
-    private String groqApiKey;
+    private String apiKey;
 
-    @Autowired
-    private AIHistoryRepository historyRepository;
+    @Value("${groq.model}")
+    private String model;
 
-    private final WebClient webClient;
+    private final WebClient webClient =
+            WebClient.create("https://api.groq.com/openai/v1");
 
-    // CONSTRUCTOR
+    public String chat(String message) {
 
-    public AIService() {
+        Map<String, Object> body = new HashMap<>();
 
-        this.webClient = WebClient.builder()
+        body.put("model", model);
 
-                .baseUrl("https://api.groq.com/openai/v1")
-
-                .defaultHeader(
-                        HttpHeaders.CONTENT_TYPE,
-                        MediaType.APPLICATION_JSON_VALUE
+        body.put(
+                "messages",
+                List.of(
+                        Map.of(
+                                "role", "user",
+                                "content", message
+                        )
                 )
-
-                .build();
-    }
-
-    // =========================
-    // CHAT
-    // =========================
-
-    public String generateChat(String message) {
-
-        return callAI(message);
-    }
-
-    // =========================
-    // RESUME
-    // =========================
-
-    public String generateResume(String details) {
-
-        String prompt = """
-                Create a professional ATS-friendly resume using:
-
-                """ + details;
-
-        return callAI(prompt);
-    }
-
-    // =========================
-    // EMAIL
-    // =========================
-
-    public String generateEmail(String prompt) {
-
-        String emailPrompt = """
-                Write a professional email for:
-
-                """ + prompt;
-
-        return callAI(emailPrompt);
-    }
-
-    // =========================
-    // MAIN AI METHOD
-    // =========================
-
-    private String callAI(String prompt) {
+        );
 
         try {
 
-            // REQUEST BODY
-
-            Map<String, Object> requestBody = new HashMap<>();
-
-            requestBody.put(
-                    "model",
-                    "llama-3.1-8b-instant"
-            );
-
-            requestBody.put(
-                    "messages",
-                    List.of(
-                            Map.of(
-                                    "role",
-                                    "user",
-                                    "content",
-                                    prompt
-                            )
-                    )
-            );
-
-            // API CALL
-
             Map response = webClient.post()
-
                     .uri("/chat/completions")
-
-                    .header(
-                            HttpHeaders.AUTHORIZATION,
-                            "Bearer " + groqApiKey
-                    )
-
-                    .bodyValue(requestBody)
-
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .bodyValue(body)
                     .retrieve()
-
                     .bodyToMono(Map.class)
-
                     .block();
 
-            // DEBUG RESPONSE
+            List choices = (List) response.get("choices");
 
-            System.out.println(response);
+            Map choice = (Map) choices.get(0);
 
-            // EXTRACT RESPONSE
+            Map messageMap = (Map) choice.get("message");
 
-            List choices =
-                    (List) response.get("choices");
-
-            Map choice =
-                    (Map) choices.get(0);
-
-            Map message =
-                    (Map) choice.get("message");
-
-            String aiResponse =
-                    message.get("content").toString();
-
-            // SAVE HISTORY
-
-            saveHistory(prompt, aiResponse);
-
-            return aiResponse;
+            return messageMap.get("content").toString();
 
         } catch (Exception e) {
 
@@ -159,32 +63,4 @@ public class AIService {
         }
     }
 
-    // =========================
-    // SAVE HISTORY
-    // =========================
-
-    private void saveHistory(
-            String prompt,
-            String response
-    ) {
-
-        AIHistory history = new AIHistory();
-
-        history.setPrompt(prompt);
-
-        history.setResponse(response);
-
-        history.setCreatedAt(LocalDateTime.now());
-
-        historyRepository.save(history);
-    }
-
-    // =========================
-    // GET HISTORY
-    // =========================
-
-    public List<AIHistory> getHistory() {
-
-        return historyRepository.findAll();
-    }
 }
